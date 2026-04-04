@@ -1,0 +1,57 @@
+services:
+  openclaw:
+    image: ${OPENCLAW_IMAGE}
+    container_name: ai-assistant-ivan-openclaw
+    command:
+      - node
+      - openclaw.mjs
+      - gateway
+      - --allow-unconfigured
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      XAI_API_KEY: ${XAI_API_KEY}
+      OPENCLAW_HOME: /openclaw-home
+      OPENCLAW_CONFIG: /openclaw-home/config.yml
+      OPENCLAW_MEMORY_PATH: /openclaw-home/memory
+      OPENCLAW_SKILLS_PATH: /openclaw-home/skills
+      OPENCLAW_HOST: ${OPENCLAW_HOST}
+      OPENCLAW_PORT: 18789
+      OPENCLAW_LOG_LEVEL: ${OPENCLAW_LOG_LEVEL}
+      OPENCLAW_AUTH_TOKEN: ${OPENCLAW_AUTH_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
+    ports:
+      - "${OPENCLAW_WEB_PORT}:18789"
+    volumes:
+      - ./openclaw-home:/openclaw-home
+      - ./logs:/var/log/openclaw
+    init: true
+    networks:
+      - ai-assistant-ivan-shared
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: ai-assistant-ivan-nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "8181:81"
+      - "4443:443"
+    volumes:
+      - ./nginx-proxy-manager/data:/data
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+    networks:
+      - ai-assistant-ivan-shared
+
+networks:
+  ai-assistant-ivan-shared:
+    name: ai-assistant-ivan-shared
+    driver: bridge

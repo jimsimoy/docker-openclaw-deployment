@@ -1,0 +1,23 @@
+.env
+.env.local
+.env.*.local
+
+# macOS / editor noise
+.DS_Store
+
+# Docker / service runtime output
+logs/
+*.log
+
+# OpenClaw persisted runtime state
+openclaw-home/.openclaw/
+openclaw-home/artifacts/
+
+# Nginx Proxy Manager generated state
+nginx-proxy-manager/data/
+nginx-proxy-manager/letsencrypt/
+
+# Local databases / generated secrets
+*.sqlite
+*.sqlite3
+keys.json
