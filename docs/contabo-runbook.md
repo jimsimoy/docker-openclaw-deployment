@@ -18,8 +18,9 @@ High-level server steps:
 6. Copy `.env.example` to `.env`
 7. Fill in keys and tokens
 8. Start with `docker compose up -d`
-9. Verify port `18789` is bound only to localhost
-10. Add proxy or webhook ingress later if needed
+9. Verify OpenClaw is not directly published on the host
+10. Connect the intended reverse proxy container to `ai-assistant-ivan-proxy`
+11. Add proxy or webhook ingress later if needed
 
 Do not expose the OpenClaw control plane publicly.
 

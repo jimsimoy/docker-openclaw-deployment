@@ -4,7 +4,7 @@ This folder contains the local deployment scaffold for `Ivan 2.0`.
 
 The goal is to prepare the Docker/OpenClaw project here first, then copy or pull the same project onto the Contabo Ubuntu 24.04 VPS and run it there with minimal changes.
 
-Docker/runtime naming in this folder uses `ai-assistant-ivan` for the Compose project, container names, and shared Docker network.
+Docker/runtime naming in this folder uses `ai-assistant-ivan` for the Compose project, container names, and the dedicated Docker proxy network.
 
 Important distinction:
 
@@ -38,7 +38,7 @@ Important security rule:
 
 Do not expose the OpenClaw gateway port `18789` publicly. Keep it internal and add only tightly controlled access.
 
-This stack also includes `Nginx Proxy Manager` so future services can share the same Docker bridge network and be fronted through one proxy layer when needed.
+This stack is designed to connect to a separate reverse proxy container over a dedicated Docker network.
 
 ## Persistence Model
 
@@ -79,9 +79,6 @@ ai-assistant/ai-assistant-docker-openclaw/
   README.md
   scripts/
   docs/
-  nginx-proxy-manager/
-    data/
-    letsencrypt/
   openclaw-home/
     config.yml
     workspace/
@@ -94,22 +91,16 @@ ai-assistant/ai-assistant-docker-openclaw/
 ## Current Services
 
 - `ai-assistant-ivan-openclaw`
-- `ai-assistant-ivan-nginx-proxy-manager`
 
-Shared Docker network:
+Dedicated Docker proxy network:
 
-- `ai-assistant-ivan-shared`
-
-Current local ports:
-
-- OpenClaw chat/UI: `http://127.0.0.1:18889/chat`
-- Nginx Proxy Manager admin UI: `http://127.0.0.1:8181`
-- Nginx Proxy Manager HTTPS listener: `https://127.0.0.1:4443`
+- `ai-assistant-ivan-proxy`
 
 Notes:
 
-- NPM host port `80` is intentionally not published in this environment
-- OpenClaw and future containers can reach each other on the shared bridge network by container name
+- OpenClaw is not published on any host port in the current Compose file
+- a separate reverse proxy container can join `ai-assistant-ivan-proxy`
+- that proxy can then route to `ai-assistant-ivan-openclaw:18789`
 
 ## Local Setup
 
@@ -161,8 +152,7 @@ Current `.env` / Compose naming defaults:
 
 - `COMPOSE_PROJECT_NAME=ai-assistant-ivan`
 - OpenClaw container name: `ai-assistant-ivan-openclaw`
-- NPM container name: `ai-assistant-ivan-nginx-proxy-manager`
-- shared network: `ai-assistant-ivan-shared`
+- proxy network: `ai-assistant-ivan-proxy`
 
 ## VPS Setup Model
 
@@ -181,7 +171,7 @@ Recommended deployment flow:
 4. Create `.env` on the server
 5. Run `docker compose up -d`
 6. Lock down network exposure
-7. Decide whether Nginx Proxy Manager should own public `80/443` on that server
+7. Connect your separate reverse proxy container to `ai-assistant-ivan-proxy`
 8. Add Telegram and Google integrations
 
 ## OpenClaw Paths Used
@@ -197,12 +187,14 @@ We intentionally do not override provider/model in Docker right now. Those stay 
 
 ## Reverse Proxy Notes
 
-`Nginx Proxy Manager` is included for future routing and TLS management, but this local environment currently uses alternate host ports:
+This project no longer bundles `Nginx Proxy Manager` in its own Compose file.
 
-- `8181 -> 81`
-- `4443 -> 443`
+Expected deployment model:
 
-On a dedicated VM or VPS, you can change those host-side bindings later if you want NPM to own the normal public ports.
+- run OpenClaw from this project
+- run your reverse proxy in a separate stack
+- attach that proxy container to `ai-assistant-ivan-proxy`
+- route traffic to `ai-assistant-ivan-openclaw:18789`
 
 ## Included Files
 
@@ -233,8 +225,6 @@ If you are committing this folder into git, the local `.gitignore` is already se
 - `logs/`
 - `openclaw-home/.openclaw/`
 - `openclaw-home/artifacts/`
-- `nginx-proxy-manager/data/`
-- `nginx-proxy-manager/letsencrypt/`
 
 ## Official References
 

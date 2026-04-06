@@ -13,10 +13,6 @@ logs/
 openclaw-home/.openclaw/
 openclaw-home/artifacts/
 
-# Nginx Proxy Manager generated state
-nginx-proxy-manager/data/
-nginx-proxy-manager/letsencrypt/
-
 # Local databases / generated secrets
 *.sqlite
 *.sqlite3

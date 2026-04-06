@@ -29,29 +29,16 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_PROJECT_ID: ${GOOGLE_PROJECT_ID}
-    ports:
-      - "${OPENCLAW_WEB_PORT}:18789"
+    expose:
+      - "18789"
     volumes:
       - ./openclaw-home:/openclaw-home
       - ./logs:/var/log/openclaw
     init: true
     networks:
-      - ai-assistant-ivan-shared
-
-  nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
-    container_name: ai-assistant-ivan-nginx-proxy-manager
-    restart: unless-stopped
-    ports:
-      - "8181:81"
-      - "4443:443"
-    volumes:
-      - ./nginx-proxy-manager/data:/data
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
-    networks:
-      - ai-assistant-ivan-shared
+      - ai-assistant-ivan-proxy
 
 networks:
-  ai-assistant-ivan-shared:
-    name: ai-assistant-ivan-shared
+  ai-assistant-ivan-proxy:
+    name: ai-assistant-ivan-proxy
     driver: bridge
