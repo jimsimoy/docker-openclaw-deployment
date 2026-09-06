@@ -2,6 +2,7 @@ services:
   openclaw:
     image: ${OPENCLAW_IMAGE}
     container_name: ai-assistant-ivan-openclaw
+    user: "0:0"
     command:
       - node
       - openclaw.mjs
@@ -16,6 +17,9 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       XAI_API_KEY: ${XAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      OLLAMA_API_KEY: ${OLLAMA_API_KEY}
       OPENCLAW_HOME: /openclaw-home
       OPENCLAW_CONFIG: /openclaw-home/config.yml
       OPENCLAW_MEMORY_PATH: /openclaw-home/memory
@@ -41,4 +45,4 @@ services:
 networks:
   ai-assistant-ivan-proxy:
     name: ai-assistant-ivan-proxy
-    driver: bridge
+    external: true

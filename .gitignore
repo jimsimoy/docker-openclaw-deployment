@@ -13,7 +13,24 @@ logs/
 openclaw-home/.openclaw/
 openclaw-home/artifacts/
 
+# Live agent secrets and runtime state — real per-deployment data,
+# not part of the public scaffold
+openclaw-home/secrets/
+openclaw-home/scripts/
+openclaw-home/tools/
+openclaw-home/watch/
+openclaw-home/workspace/personas/
+openclaw-home/workspace/tasks/
+openclaw-home/workspace/MEMORY.md
+openclaw-home/workspace/CURRENT_STATE.md
+openclaw-home/workspace/couchdb-health*.conf
+openclaw-home/workspace/couchdb-health*.sh
+openclaw-home/workspace/scripts/
+openclaw-home/MIGRATION-HANDOVER.md
+
 # Local databases / generated secrets
 *.sqlite
 *.sqlite3
 keys.json
+*.enc
+.key
