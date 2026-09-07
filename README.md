@@ -1,6 +1,6 @@
 ## Docker OpenClaw Deployment — Self-Hosted Personal AI Operator
 
-[![Docker Compose](https://img.shields.io/badge/docker-compose-blue.svg?style=flat-square)](https://docs.docker.com/compose/) [![OpenClaw](https://img.shields.io/badge/OpenClaw-compatible-green.svg?style=flat-square)](https://clawdocs.org) [![Ollama Cloud](https://img.shields.io/badge/models-Ollama%20Cloud-orange.svg?style=flat-square)](https://github.com/jimsimoy/docker-ollama)
+[![Docker Compose](https://img.shields.io/badge/docker-compose-blue.svg?style=flat-square)](https://docs.docker.com/compose/) [![OpenClaw](https://img.shields.io/badge/OpenClaw-compatible-green.svg?style=flat-square)](https://clawdocs.org) [![Ollama Cloud](https://img.shields.io/badge/models-Ollama%20Cloud-orange.svg?style=flat-square)](https://github.com/jimsimoy/docker-ollama) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
 "A Docker Compose scaffold for running OpenClaw as a persistent, always-on personal assistant —
 identity, memory, and skills survive container rebuilds and server migrations."
@@ -167,9 +167,20 @@ docker-openclaw-deployment/
   generic, with no real names, handles, or domains.
 - Review `openclaw-home/skills/` before installing any third-party skill — skills can request shell
   and filesystem access.
-- Recommended before you go further: enable GitHub secret scanning / push protection on your fork,
-  add a pre-commit secret scanner (e.g. [gitleaks](https://github.com/gitleaks/gitleaks)), and rotate
-  any provider key you ever paste into a chat, script, or terminal.
+- A [gitleaks](https://github.com/gitleaks/gitleaks) pre-commit hook is included in `.githooks/` and
+  blocks commits containing likely secrets. Enable it after cloning:
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+  (requires `gitleaks` installed locally — `apt install gitleaks` or see its releases page)
+- Also recommended on your GitHub fork: enable **Settings → Code security → Secret scanning** and
+  **Push protection**, and rotate any provider key you ever paste into a chat, script, or terminal.
+
+---
+
+## License
+
+[MIT](LICENSE) — free to use, modify, and distribute.
 
 ---
 

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Blocks commits containing likely secrets. Requires gitleaks:
+# https://github.com/gitleaks/gitleaks (apt install gitleaks, or see releases page).
+# Enable with: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not installed, skipping secret scan (install it to enable this check)" >&2
+  exit 0
+fi
+
+gitleaks protect --staged --redact -v
