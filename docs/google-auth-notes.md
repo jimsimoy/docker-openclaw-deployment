@@ -18,4 +18,4 @@ Needed later:
 
 Scope principle:
 
-Use the narrowest scopes that still support the approved workflows for `Ivan 2.0`.
+Use the narrowest scopes that still support your assistant's approved workflows.

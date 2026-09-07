@@ -1,7 +1,7 @@
 services:
   openclaw:
     image: ${OPENCLAW_IMAGE}
-    container_name: ai-assistant-ivan-openclaw
+    container_name: ${OPENCLAW_CONTAINER_NAME:-openclaw}
     user: "0:0"
     command:
       - node
@@ -21,7 +21,6 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       OLLAMA_API_KEY: ${OLLAMA_API_KEY}
       OPENCLAW_HOME: /openclaw-home
-      OPENCLAW_CONFIG: /openclaw-home/config.yml
       OPENCLAW_MEMORY_PATH: /openclaw-home/memory
       OPENCLAW_SKILLS_PATH: /openclaw-home/skills
       OPENCLAW_HOST: ${OPENCLAW_HOST}
@@ -40,9 +39,9 @@ services:
       - ./logs:/var/log/openclaw
     init: true
     networks:
-      - ai-assistant-ivan-proxy
+      - openclaw-proxy
 
 networks:
-  ai-assistant-ivan-proxy:
-    name: ai-assistant-ivan-proxy
+  openclaw-proxy:
+    name: ${OPENCLAW_NETWORK_NAME:-openclaw-proxy}
     external: true

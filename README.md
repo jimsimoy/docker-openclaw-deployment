@@ -1,237 +1,176 @@
-# Ivan 2.0 Docker OpenClaw Stack
+## Docker OpenClaw Deployment — Self-Hosted Personal AI Operator
 
-This folder contains the local deployment scaffold for `Ivan 2.0`.
+[![Docker Compose](https://img.shields.io/badge/docker-compose-blue.svg?style=flat-square)](https://docs.docker.com/compose/) [![OpenClaw](https://img.shields.io/badge/OpenClaw-compatible-green.svg?style=flat-square)](https://clawdocs.org) [![Ollama Cloud](https://img.shields.io/badge/models-Ollama%20Cloud-orange.svg?style=flat-square)](https://github.com/jimsimoy/docker-ollama)
 
-The goal is to prepare the Docker/OpenClaw project here first, then copy or pull the same project onto the Contabo Ubuntu 24.04 VPS and run it there with minimal changes.
+"A Docker Compose scaffold for running OpenClaw as a persistent, always-on personal assistant —
+identity, memory, and skills survive container rebuilds and server migrations."
 
-Docker/runtime naming in this folder uses `ai-assistant-ivan` for the Compose project, container names, and the dedicated Docker proxy network.
+by [Jan Ivan Simoy](https://github.com/jimsimoy)
 
-Important distinction:
+---
 
-- Docker/project name: `ai-assistant-ivan`
-- Agent name/persona: `Ivan 2.0`
+## What is this?
 
-Current LLM setup target:
+This repo is a minimal, production-leaning Docker Compose setup for [OpenClaw](https://clawdocs.org),
+an open-source AI agent runtime. It runs the OpenClaw gateway in a container, keeps the gateway off
+the public internet by default, and bind-mounts a host directory (`openclaw-home/`) so your
+assistant's identity, memory, and skills persist independently of the container lifecycle.
 
-- development: OpenRouter free tier
-- later production option: paid OpenRouter or direct OpenAI/Anthropic API
+It does not bundle a specific LLM provider, reverse proxy, or messaging channel — you wire those up
+through environment variables and OpenClaw's own onboarding, then point a reverse proxy of your
+choice at the container.
 
-Provider and model selection are now stored in the host-persisted OpenClaw config, not Docker environment overrides.
+---
 
-Container image default:
+## Requirements
 
-- `ghcr.io/openclaw/openclaw:latest`
+| Requirement | Notes |
+|---|---|
+| Docker Engine + Compose plugin | Any recent version |
+| Ubuntu 22.04/24.04 (or similar) | Works on any Docker host; see `docs/vps-runbook.md` for a VPS walkthrough |
+| An LLM provider | Ollama Cloud (recommended, see below), OpenRouter, Anthropic, OpenAI, or xAI |
+| A reverse proxy (optional) | Nginx Proxy Manager, Caddy, etc. — not bundled here |
 
-## Why Docker
+---
 
-Yes, OpenClaw should run in Docker on the VPS.
-
-Why:
-
-- OpenClaw officially supports Docker deployment
-- containerized deployment is easier to reproduce
-- the gateway can stay bound to `127.0.0.1`
-- persistent data can live in mounted volumes
-- upgrades and rollback are simpler than a hand-managed host install
-
-Important security rule:
-
-Do not expose the OpenClaw gateway port `18789` publicly. Keep it internal and add only tightly controlled access.
-
-This stack is designed to connect to a separate reverse proxy container over a dedicated Docker network.
-
-## Persistence Model
-
-This project is set up so the important OpenClaw state lives on the host, not inside the container.
-
-Host-mounted OpenClaw home includes:
-
-- config
-- persona files
-- memory
-- skills
-- workspace
-- artifacts
-
-That means if you move this folder to another server and run Docker there, `Ivan 2.0` can keep:
-
-- its identity
-- its memory
-- its prior config
-- installed skills
-- prior workspace files
-- artifacts and continuity stored under the OpenClaw home directory
-
-Important note:
-
-Copy the full project folder, including `openclaw-home/`, not just the Compose file.
-
-## Project Layout
-
-```text
-ai-assistant/ai-assistant-docker-openclaw/
-  .env.example
-  .gitignore
-  docker-compose.yml
-  git-commit.sh
-  git-pull-current.sh
-  git-push-current.sh
-  README.md
-  scripts/
-  docs/
-  openclaw-home/
-    config.yml
-    workspace/
-    memory/
-    skills/
-    artifacts/
-  logs/
-```
-
-## Current Services
-
-- `ai-assistant-ivan-openclaw`
-
-Dedicated Docker proxy network:
-
-- `ai-assistant-ivan-proxy`
-
-Notes:
-
-- OpenClaw is not published on any host port in the current Compose file
-- a separate reverse proxy container can join `ai-assistant-ivan-proxy`
-- that proxy can then route to `ai-assistant-ivan-openclaw:18789`
-
-## Local Setup
-
-1. Copy `.env.example` to `.env`.
-2. Fill in `OPENROUTER_API_KEY` for the initial development setup.
-3. Start the stack:
+## Quick Start
 
 ```bash
+git clone https://github.com/jimsimoy/docker-openclaw-deployment.git
+cd docker-openclaw-deployment
+cp .env.example .env    # fill in your model provider key(s)
 docker compose up -d
-```
-
-4. Check logs:
-
-```bash
 docker compose logs -f openclaw
 ```
 
-5. Stop the stack:
+The gateway is not published on any host port by default — see [Reverse Proxy](#reverse-proxy) to
+expose it.
+
+---
+
+## Choosing a Model Provider
+
+OpenClaw's model is configured through its own onboarding/CLI (`openclaw onboard`, `openclaw models
+set <provider>/<model>`), not through this repo's Docker config — the provider API key just needs to
+be present in `.env` so the container can hand it to OpenClaw.
+
+**Recommended: [Ollama Cloud](https://ollama.com/cloud)** via [jimsimoy/docker-ollama](https://github.com/jimsimoy/docker-ollama) —
+run your own Ollama instance from that repo (or use Ollama Cloud directly), set `OLLAMA_API_KEY` in
+`.env`, then inside the container run:
 
 ```bash
-docker compose down
+docker compose exec openclaw node openclaw.mjs models set ollama/gpt-oss:120b-cloud
 ```
 
-Useful helper scripts in this folder:
+| Provider | Env var | Notes |
+|---|---|---|
+| Ollama Cloud | `OLLAMA_API_KEY` | Recommended — pairs with [docker-ollama](https://github.com/jimsimoy/docker-ollama) |
+| OpenRouter | `OPENROUTER_API_KEY` | Free tier available; fine for smoke-testing, not for dependable automation |
+| Anthropic | `ANTHROPIC_API_KEY` | |
+| OpenAI | `OPENAI_API_KEY` | |
+| Google Gemini | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | |
+| xAI | `XAI_API_KEY` | |
 
-```bash
-./git-pull-current.sh
-./git-push-current.sh
-./git-commit.sh "your commit message"
+Set only the keys for the provider(s) you actually plan to use.
+
+---
+
+## Configuration
+
+Copy `.env.example` to `.env` and fill in:
+
+| Variable | Purpose |
+|---|---|
+| `COMPOSE_PROJECT_NAME`, `OPENCLAW_CONTAINER_NAME`, `OPENCLAW_NETWORK_NAME` | Naming — change if running multiple instances on one host |
+| `TZ` | Timezone for scheduling/heartbeat |
+| `OPENCLAW_PORT`, `OPENCLAW_WEB_PORT` | Internal gateway/control-UI ports |
+| `OPENCLAW_HOME` | Host path bind-mounted to `/openclaw-home` in the container |
+| `*_API_KEY` | Your chosen model provider(s), see above |
+| `OPENCLAW_AUTH_TOKEN` | Gateway auth token |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALLOWED_CHAT_IDS` | Optional Telegram channel |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_PROJECT_ID` | Optional Gmail/Drive/Calendar integration |
+| `OPENCLAW_DOMAIN` | Your public hostname, if fronting with a reverse proxy |
+
+---
+
+## Persistence Model
+
+`openclaw-home/` is bind-mounted into the container and holds everything that should survive a
+rebuild or a move to a new server:
+
+- `openclaw-home/.openclaw/` — OpenClaw's real runtime state (identity, memory, credentials, exec
+  approvals, installed skills). Created and managed entirely by OpenClaw itself once you run
+  `openclaw onboard` inside the container. **Never commit this directory** — it's gitignored, and it
+  contains your live secrets and personal data.
+- `openclaw-home/workspace-sample/` — a generic template for the identity/behavior files OpenClaw
+  reads on first onboarding (`AGENTS.md`, `IDENTITY.md`, `SOUL.md`, `TOOLS.md`, `USER.md`). Copy it to
+  `openclaw-home/workspace/`, fill in the placeholders, then onboard — see
+  `openclaw-home/workspace-sample/README.md`.
+- `openclaw-home/memory/`, `openclaw-home/skills/` — example category files, safe to commit as-is or
+  extend.
+- `openclaw-home/logs/` — local log output.
+
+To migrate to another server: copy the whole `openclaw-home/` directory (including the gitignored
+`.openclaw/`) along with your `.env`, then `docker compose up -d` on the new host.
+
+---
+
+## Reverse Proxy
+
+The OpenClaw gateway is not published on any host port by default and should stay off the public
+internet directly. Run your reverse proxy (Nginx Proxy Manager, Caddy, etc.) as a separate stack and
+join it to this project's Docker network:
+
+```yaml
+networks:
+  default:
+    external: true
+    name: ${OPENCLAW_NETWORK_NAME:-openclaw-proxy}   # matches this repo's .env
 ```
 
-Before first run, review the host-persisted OpenClaw files under `openclaw-home/`:
+Then route your proxy to `${OPENCLAW_CONTAINER_NAME:-openclaw}:18789`.
 
-- `config.yml`
-- `workspace/SOUL.md`
-- `workspace/IDENTITY.md`
-- `workspace/AGENTS.md`
-- `workspace/USER.md`
-- `workspace/TOOLS.md`
+---
 
-Current development defaults in `openclaw-home/config.yml`:
+## Project Structure
 
-- provider: `openrouter`
-- model: `openrouter/free`
+```text
+docker-openclaw-deployment/
+  .env.example
+  docker-compose.yml
+  git-commit.sh / git-pull-current.sh / git-push-current.sh
+  scripts/
+    docker-healthcheck.sh
+    restart-openclaw.sh
+  docs/
+    vps-runbook.md
+    google-auth-notes.md
+    telegram-setup.md
+  openclaw-home/
+    workspace-sample/     # generic identity template — copy to workspace/ and edit
+    memory/                # example memory category files
+    skills/                # drop reviewed OpenClaw skills here
+    logs/
+    .openclaw/             # gitignored — real runtime state, created by OpenClaw
+    workspace/              # gitignored — your filled-in copy of workspace-sample/
+```
 
-If the free router is too inconsistent for a given task later, switch to a specific free model such as a `:free` variant in `openclaw-home/config.yml`.
+---
 
-Current `.env` / Compose naming defaults:
+## Security
 
-- `COMPOSE_PROJECT_NAME=ai-assistant-ivan`
-- OpenClaw container name: `ai-assistant-ivan-openclaw`
-- proxy network: `ai-assistant-ivan-proxy`
+- The gateway is never published on a host port in this Compose file — only reachable via the
+  Docker network, by a reverse proxy you control.
+- `.env`, `openclaw-home/.openclaw/`, `openclaw-home/workspace/`, and `openclaw-home/artifacts/` are
+  gitignored — real credentials and personal agent state never get committed by default.
+- `openclaw-home/workspace-sample/` is the only identity template tracked in git — it is fully
+  generic, with no real names, handles, or domains.
+- Review `openclaw-home/skills/` before installing any third-party skill — skills can request shell
+  and filesystem access.
+- Recommended before you go further: enable GitHub secret scanning / push protection on your fork,
+  add a pre-commit secret scanner (e.g. [gitleaks](https://github.com/gitleaks/gitleaks)), and rotate
+  any provider key you ever paste into a chat, script, or terminal.
 
-## VPS Setup Model
+---
 
-Planned deployment target:
-
-- provider: Contabo
-- OS: Ubuntu 24.04
-- runtime: Docker Engine + Docker Compose
-- app: OpenClaw in container
-
-Recommended deployment flow:
-
-1. Provision VPS
-2. Install Docker
-3. Clone this project
-4. Create `.env` on the server
-5. Run `docker compose up -d`
-6. Lock down network exposure
-7. Connect your separate reverse proxy container to `ai-assistant-ivan-proxy`
-8. Add Telegram and Google integrations
-
-## OpenClaw Paths Used
-
-This project uses environment-variable overrides so OpenClaw reads from a bind-mounted home directory on the host:
-
-- `OPENCLAW_HOME=/openclaw-home`
-- `OPENCLAW_CONFIG=/openclaw-home/config.yml`
-- `OPENCLAW_MEMORY_PATH=/openclaw-home/memory`
-- `OPENCLAW_SKILLS_PATH=/openclaw-home/skills`
-
-We intentionally do not override provider/model in Docker right now. Those stay in the persisted OpenClaw config to keep setup simpler.
-
-## Reverse Proxy Notes
-
-This project no longer bundles `Nginx Proxy Manager` in its own Compose file.
-
-Expected deployment model:
-
-- run OpenClaw from this project
-- run your reverse proxy in a separate stack
-- attach that proxy container to `ai-assistant-ivan-proxy`
-- route traffic to `ai-assistant-ivan-openclaw:18789`
-
-## Included Files
-
-- `docs/contabo-runbook.md`
-- `docs/google-auth-notes.md`
-- `docs/telegram-setup.md`
-- `git-commit.sh`
-- `git-pull-current.sh`
-- `git-push-current.sh`
-- `scripts/bootstrap-vps.sh`
-- `scripts/docker-healthcheck.sh`
-- `scripts/package-migration.sh`
-
-## Migration Workflow
-
-To move `Ivan 2.0` to another server without resetting it:
-
-1. Copy this whole project folder, or create an archive with `scripts/package-migration.sh`
-2. Move it to the new server
-3. Create or restore `.env`
-4. Run `docker compose up -d`
-
-Because the project stores OpenClaw state in `openclaw-home/`, the agent can keep its persona, memory, workspace files, and other persisted state.
-
-If you are committing this folder into git, the local `.gitignore` is already set up to exclude:
-
-- `.env`
-- `logs/`
-- `openclaw-home/.openclaw/`
-- `openclaw-home/artifacts/`
-
-## Official References
-
-- OpenClaw deployment options: https://clawdocs.org/guides/deployment-options/
-- OpenClaw environment variables: https://clawdocs.org/reference/environment-variables/
-- OpenClaw OpenRouter note: https://clawdocs.org/guides/cloud-gpu-models/
-- OpenClaw installation: https://clawdocs.org/getting-started/installation/
-- OpenClaw memory system: https://clawdocs.org/architecture/memory-system/
-- OpenClaw SOUL.md guide: https://clawdocs.org/guides/soul-md/
-- OpenClaw gateway security note: https://clawdocs.org/architecture/gateway/
+[Report a Bug](https://github.com/jimsimoy/docker-openclaw-deployment/issues) · [Request a Feature](https://github.com/jimsimoy/docker-openclaw-deployment/issues)

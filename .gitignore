@@ -12,6 +12,8 @@ logs/
 # OpenClaw persisted runtime state
 openclaw-home/.openclaw/
 openclaw-home/artifacts/
+openclaw-home/workspace/
+openclaw-home/config.yml
 
 # Live agent secrets and runtime state — real per-deployment data,
 # not part of the public scaffold

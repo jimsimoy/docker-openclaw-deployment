@@ -2,7 +2,7 @@
 
 Planned channel:
 
-- Telegram bot for `Ivan 2.0`
+- Telegram bot for your assistant
 
 Needed later:
 
